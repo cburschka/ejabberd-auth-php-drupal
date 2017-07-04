@@ -1,0 +1,13 @@
+{
+  "name": "ermarian/ejabberd-auth-php-drupal",
+  "description": "Provides a Drupal endpoint for ejabberd-auth-php",
+  "type": "drupal-module",
+  "license": "GPL2+",
+  "authors": [
+    {
+      "name": "Christoph Burschka",
+      "email": "christoph@burschka.de"
+    }
+  ],
+  "require": {}
+}
