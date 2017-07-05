@@ -1,6 +1,6 @@
 {
-  "name": "ermarian/ejabberd-auth-php-drupal",
-  "description": "Provides a Drupal endpoint for ejabberd-auth-php",
+  "name": "ermarian/ejabberd-auth-drupal",
+  "description": "Provides a Drupal endpoint for ejabberd-auth",
   "type": "drupal-module",
   "license": "GPL2+",
   "authors": [
