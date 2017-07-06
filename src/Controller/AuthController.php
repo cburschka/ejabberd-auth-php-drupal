@@ -87,10 +87,14 @@ class AuthController extends ControllerBase {
           break;
         case 'auth':
           $password = $request->request->get('password');
-          $response['result'] = (
-            $this->authenticateSession($username, $password) ||
-            $this->authenticate($username, $password)
-          );
+          $result = $this->authenticateSession($username, $password);
+          // Only authenticate with password if it isn't in session token format.
+          // (The risk of a password in that form is less than the risk of dinging
+          // the flood control for a broken session authentication.)
+          if ($result === NULL) {
+            $result = $this->authenticate($username, $password);
+          }
+          $response['result'] = $result;
           break;
         default:
           $response['error'] = "Unknown command '{$command}'.";
@@ -150,7 +154,7 @@ class AuthController extends ControllerBase {
    * @param string $password
    *   The password, potentially matching timestamp:hash.
    *
-   * @return bool
+   * @return bool|null
    *   TRUE iff the password is a valid session-based secret.
    *
    * @throws \RuntimeException
@@ -172,7 +176,7 @@ class AuthController extends ControllerBase {
       }
     }
 
-    return FALSE;
+    return NULL;
   }
 
   /**
