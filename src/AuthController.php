@@ -33,7 +33,9 @@ class AuthController extends ControllerBase {
    * @param \Drupal\Core\Entity\EntityStorageInterface $storage
    * @param \Drupal\Core\Flood\FloodInterface $flood
    */
-  public function __construct(UserAuthInterface $auth, EntityStorageInterface $storage, FloodInterface $flood) {
+  public function __construct(UserAuthInterface $auth,
+                              EntityStorageInterface $storage,
+                              FloodInterface $flood) {
     $this->auth = $auth;
     $this->storage = $storage;
     $this->flood = $flood;
@@ -58,7 +60,7 @@ class AuthController extends ControllerBase {
    * Process an incoming request.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
-   *   A POST re
+   *   A POST request.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   {"result": true|false}
