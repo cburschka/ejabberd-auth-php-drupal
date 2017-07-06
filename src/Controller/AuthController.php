@@ -83,7 +83,7 @@ class AuthController extends ControllerBase {
       $command = $request->request->get('command');
       switch ($command) {
         case 'isuser':
-          $response['result'] = $this->isuser($username);
+          $response['result'] = $this->userExists($username);
           break;
         case 'auth':
           $password = $request->request->get('password');
@@ -140,8 +140,10 @@ class AuthController extends ControllerBase {
    *
    * @return bool
    *   TRUE iff an account with that name exists and is not blocked.
+   *
+   * @throws \InvalidArgumentException
    */
-  protected function isuser($username) {
+  protected function userExists($username) {
     $user = $this->loadUser($username);
     return $user && $user->isActive();
   }
@@ -255,8 +257,13 @@ class AuthController extends ControllerBase {
    * @param string $name
    *
    * @return \Drupal\user\UserInterface|null
+   *
+   * @throws \InvalidArgumentException
    */
   protected function loadUser($name) {
+    if (!$name) {
+      throw new \InvalidArgumentException('Username must not be empty.');
+    }
     $users = $this->storage->loadByProperties(['name' => $name]);
     return reset($users);
   }
