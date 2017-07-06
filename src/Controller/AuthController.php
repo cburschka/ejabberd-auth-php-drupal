@@ -87,14 +87,7 @@ class AuthController extends ControllerBase {
           break;
         case 'auth':
           $password = $request->request->get('password');
-          $result = $this->authenticateSession($username, $password);
-          // Only authenticate with password if it isn't in session token format.
-          // (The risk of a password in that form is less than the risk of dinging
-          // the flood control for a broken session authentication.)
-          if ($result === NULL) {
-            $result = $this->authenticate($username, $password);
-          }
-          $response['result'] = $result;
+          $response['result'] = $this->authenticate($username, $password);
           break;
         default:
           $response['error'] = "Unknown command '{$command}'.";
@@ -149,6 +142,26 @@ class AuthController extends ControllerBase {
   }
 
   /**
+   * Authenticate with session or password.
+   *
+   * @param string $username
+   *   The username.
+   * @param string $password
+   *   The password.
+   *
+   * @return bool
+   *
+   * @throws \RuntimeException
+   * @throws \InvalidArgumentException
+   */
+  protected function authenticate($username, $password) {
+    return (
+      $this->authenticateSession($username, $password) ||
+      $this->authenticatePassword($username, $password)
+    );
+  }
+
+  /**
    * Attempt to use the password as a session-based secret.
    *
    * @param string $username
@@ -156,9 +169,10 @@ class AuthController extends ControllerBase {
    * @param string $password
    *   The password, potentially matching timestamp:hash.
    *
-   * @return bool|null
+   * @return bool
    *   TRUE iff the password is a valid session-based secret.
    *
+   * @throws \InvalidArgumentException
    * @throws \RuntimeException
    */
   protected function authenticateSession($username, $password) {
@@ -169,16 +183,22 @@ class AuthController extends ControllerBase {
       // Verify that the secret hasn't expired or time-traveled.
       $current = \Drupal::time()->getRequestTime();
       if ($current < $timestamp || $current > $timestamp + static::SESSION_TIMEOUT) {
-        return FALSE;
+        throw new \RuntimeException('Session token has expired.');
       }
 
       // Load the user and verify the hash.
-      if ($user = $this->loadUser($username)) {
-        return Crypt::hashEquals($this->getLoginHash($user, $timestamp), $hash);
+      $user = $this->loadUser($username);
+      if (!$user) {
+        throw new \RuntimeException('User does not exist.');
       }
+      if (Crypt::hashEquals($this->getLoginHash($user, $timestamp), $hash)) {
+        return TRUE;
+      }
+
+      throw new \RuntimeException('Session token is invalid.');
     }
 
-    return NULL;
+    return FALSE;
   }
 
   /**
@@ -195,7 +215,7 @@ class AuthController extends ControllerBase {
    * @throws \InvalidArgumentException
    *   If the login attempt is blocked by flood control.
    */
-  protected function authenticate($username, $password) {
+  protected function authenticatePassword($username, $password) {
     $user = $this->loadUser($username);
     if (!$user || !$user->hasPermission('authenticate on ejabberd with password')) {
       return FALSE;
@@ -222,6 +242,7 @@ class AuthController extends ControllerBase {
       $this->flood->register('ejabberd.failed_login_user',
         $flood_config->get('user_window'),
         $username);
+      throw new \InvalidArgumentException('Invalid username or password');
     }
     return $result;
   }
