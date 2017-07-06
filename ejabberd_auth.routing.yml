@@ -1,6 +1,7 @@
-eap_drupal.rest:
+ejabberd_drupal.auth:
   path: '/ejabberd/auth'
   defaults:
     _controller: '\Drupal\ejabberd_auth\Controller\AuthController::json'
   requirements:
     _access: 'TRUE'
+    _format: 'json'
