@@ -4,13 +4,11 @@ ejabberd_drupal.auth:
     _controller: '\Drupal\ejabberd_auth\Controller\AuthController::auth'
   requirements:
     _access: 'TRUE'
-    _format: 'json'
 
 ejabberd_drupal.session:
   path: '/ejabberd/auth/session'
   defaults:
     _controller: '\Drupal\ejabberd_auth\Controller\AuthController::session'
   requirements:
-    _format: 'json'
     _permission: 'authenticate on ejabberd with session'
     _user_is_logged_in: 'TRUE'
