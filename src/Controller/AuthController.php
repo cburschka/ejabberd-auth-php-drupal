@@ -97,7 +97,7 @@ class AuthController extends ControllerBase {
       }
     }
     catch (\Exception $exception) {
-      $response['error'] = $exception->getMessage() ?: true;
+      $response['error'] = $exception->getMessage() ?: TRUE;
     }
     return new JsonResponse($response);
   }
@@ -118,7 +118,7 @@ class AuthController extends ControllerBase {
         ];
       }
       catch (\Exception $exception) {
-        $response['error'] = $exception->getMessage() ?: true;
+        $response['error'] = $exception->getMessage() ?: TRUE;
       }
     }
     else {
