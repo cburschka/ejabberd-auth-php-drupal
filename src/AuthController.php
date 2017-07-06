@@ -2,15 +2,26 @@
 
 namespace Drupal\ejabberd_auth\Controller;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Flood\FloodInterface;
+use Drupal\Core\Site\Settings;
 use Drupal\user\UserAuthInterface;
+use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 class AuthController extends ControllerBase {
+
+  /**
+   * The number of seconds a session-based secret is valid.
+   *
+   * @var int
+   */
+  const SESSION_TIMEOUT = 60;
+
   /**
    * @var \Drupal\user\UserAuthInterface
    */
@@ -65,7 +76,7 @@ class AuthController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   {"result": true|false}
    */
-  public function json(Request $request) {
+  public function auth(Request $request) {
     $response['result'] = FALSE;
     try {
       $username = $request->request->get('user');
@@ -75,14 +86,41 @@ class AuthController extends ControllerBase {
           break;
         case 'auth':
           $password = $request->request->get('password');
-          $response['result'] = (bool) $this->authenticate($username, $password);
+          $response['result'] = (
+            $this->authenticateSession($username, $password) ||
+            $this->authenticate($username, $password)
+          );
       }
     }
     catch (\Exception $exception) {
-      if ($message = $exception->getMessage()) {
-        $response['error'] = $message;
+      $response['error'] = $exception->getMessage() ?: true;
+    }
+    return new JsonResponse($response);
+  }
+
+  /**
+   * Return a temporary hash for logging in on ejabberd.
+   */
+  public function session() {
+    $response = [];
+    if ($user = $this->storage->load(\Drupal::currentUser()->id())) {
+      try {
+        /** @var \Drupal\user\UserInterface $user */
+        $timestamp = \Drupal::time()->getRequestTime();
+        $hash = $this->getLoginHash($user, $timestamp);
+        $response = [
+          'user' => $user,
+          'secret' => "$timestamp:$hash",
+        ];
+      }
+      catch (\Exception $exception) {
+        $response['error'] = $exception->getMessage() ?: true;
       }
     }
+    else {
+      $response['error'] = 'Not logged in as a user.';
+    }
+
     return new JsonResponse($response);
   }
 
@@ -96,9 +134,41 @@ class AuthController extends ControllerBase {
    *   TRUE iff an account with that name exists and is not blocked.
    */
   protected function isuser($username) {
-    /** @var \Drupal\user\UserInterface[] $users */
-    $users = $this->storage->loadByProperties(['name' => $username]);
-    return $users && reset($users)->isActive();
+    $user = $this->loadUser($username);
+    return $user && $user->isActive();
+  }
+
+  /**
+   * Attempt to use the password as a session-based secret.
+   *
+   * @param string $username
+   *   The username to authenticate.
+   * @param string $password
+   *   The password, potentially matching timestamp:hash.
+   *
+   * @return bool
+   *   TRUE iff the password is a valid session-based secret.
+   *
+   * @throws \RuntimeException
+   */
+  protected function authenticateSession($username, $password) {
+    // Check if the password is a timestamp:hash.
+    if (preg_match('/^(\d+):([\w-]+)$/', $password, $match)) {
+      list($timestamp, $hash) = $match;
+
+      // Verify that the secret hasn't expired or time-traveled.
+      $current = \Drupal::time()->getRequestTime();
+      if ($current < $timestamp || $current > $timestamp + static::SESSION_TIMEOUT) {
+        return FALSE;
+      }
+
+      // Load the user and verify the hash.
+      if ($user = $this->loadUser($username)) {
+        return Crypt::hashEquals($this->getLoginHash($user, $timestamp), $hash);
+      }
+    }
+
+    return FALSE;
   }
 
   /**
@@ -140,4 +210,42 @@ class AuthController extends ControllerBase {
     }
     return $result;
   }
+
+  /**
+   * Create an ejabberd login hash.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user who may authenticate with the hash.
+   * @param int $timestamp
+   *   The timestamp of the hash.
+   *
+   * @return string
+   *
+   * @throws \RuntimeException
+   *
+   * @see user_pass_rehash().
+   */
+  protected function getLoginHash(UserInterface $user, $timestamp) {
+    $data = implode(':', [
+      // Module-specific string, to avoid leaking a hash that does anything else.
+      // (For example, mirroring the exact format of user_pass_rehash() here would
+      // create a token that can also be used to reset the password.)
+      'ejabberd_auth',
+      $timestamp,
+      $user->uuid(),
+    ]);
+
+    return Crypt::hmacBase64($data, Settings::getHashSalt() . $user->getPassword());
+  }
+
+  /**
+   * @param string $name
+   *
+   * @return \Drupal\user\UserInterface|null
+   */
+  protected function loadUser($name) {
+    $users = $this->storage->loadByProperties(['name' => $name]);
+    return reset($users);
+  }
+
 }
