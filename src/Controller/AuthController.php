@@ -114,7 +114,7 @@ class AuthController extends ControllerBase {
         $hash = $this->getLoginHash($user, $timestamp);
         $response = [
           'user' => $user->getAccountName(),
-          'secret' => "$timestamp:$hash",
+          'secret' => "session:$timestamp:$hash",
         ];
       }
       catch (\Exception $exception) {
@@ -157,7 +157,7 @@ class AuthController extends ControllerBase {
    */
   protected function authenticateSession($username, $password) {
     // Check if the password is a timestamp:hash.
-    if (preg_match('/^(\d+):([\w-]+)$/', $password, $match)) {
+    if (preg_match('/^session:(\d+):([\w-]+)$/', $password, $match)) {
       list(,$timestamp, $hash) = $match;
 
       // Verify that the secret hasn't expired or time-traveled.
