@@ -186,6 +186,11 @@ class AuthController extends ControllerBase {
    *   If the login attempt is blocked by flood control.
    */
   protected function authenticate($username, $password) {
+    $user = $this->loadUser($username);
+    if (!$user || !$user->hasPermission('authenticate on ejabberd with password')) {
+      return FALSE;
+    }
+
     $flood_config = $this->config('user.flood');
 
     // We cannot filter by IP, as the ejabberd server does not pass it on.

@@ -12,4 +12,5 @@ ejabberd_drupal.session:
     _controller: '\Drupal\ejabberd_auth\Controller\AuthController::session'
   requirements:
     _format: 'json'
+    _permission: 'authenticate on ejabberd with session'
     _user_is_logged_in: 'TRUE'

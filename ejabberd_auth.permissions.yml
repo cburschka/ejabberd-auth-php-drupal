@@ -1,0 +1,7 @@
+authenticate on ejabberd with session:
+  title: Authenticate on ejabberd with session
+  description: Create a temporary session token and use it as an external password.
+
+authenticate on ejabberd with password:
+  title: Authenticate on ejabberd with password
+  description: Use the Drupal password to log in externally.
