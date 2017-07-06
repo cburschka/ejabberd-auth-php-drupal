@@ -80,7 +80,8 @@ class AuthController extends ControllerBase {
     $response['result'] = FALSE;
     try {
       $username = $request->request->get('user');
-      switch ($request->request->get('command')) {
+      $command = $request->request->get('command');
+      switch ($command) {
         case 'isuser':
           $response['result'] = $this->isuser($username);
           break;
@@ -90,6 +91,9 @@ class AuthController extends ControllerBase {
             $this->authenticateSession($username, $password) ||
             $this->authenticate($username, $password)
           );
+          break;
+        default:
+          $response['error'] = "Unknown command '{$command}'.";
       }
     }
     catch (\Exception $exception) {
