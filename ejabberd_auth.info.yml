@@ -1,5 +1,7 @@
 name: Ejabberd Authentication
+type: module
 description: Provides a REST authentication endpoint for ejabberd-auth.
+package: REST
 core: 8.x
 dependencies:
   - user
