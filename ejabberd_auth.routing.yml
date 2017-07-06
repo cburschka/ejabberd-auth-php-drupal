@@ -1,12 +1,12 @@
 ejabberd_drupal.auth:
-  path: '/ejabberd/auth'
+  path: '/ejabberd-auth'
   defaults:
-    _controller: '\Drupal\ejabberd_auth\Controller\AuthController::auth'
+    _controller: '\Drupal\ejabberd_auth\Controller\AuthController::main'
   requirements:
     _access: 'TRUE'
 
 ejabberd_drupal.session:
-  path: '/ejabberd/auth/session'
+  path: '/ejabberd-auth/session'
   defaults:
     _controller: '\Drupal\ejabberd_auth\Controller\AuthController::session'
   requirements:

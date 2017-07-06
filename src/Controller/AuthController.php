@@ -76,7 +76,7 @@ class AuthController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   {"result": true|false}
    */
-  public function auth(Request $request) {
+  public function main(Request $request) {
     $response['result'] = FALSE;
     try {
       $username = $request->request->get('user');
